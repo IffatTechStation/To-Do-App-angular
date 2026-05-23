@@ -1,0 +1,144 @@
+<div class="todo-container">
+  <div class="todo-card">
+    <h1 class="title">📝 Todo App</h1>
+    
+    <!-- Add Todo Form with Priority & Due Date -->
+    <div class="input-section">
+      <input
+        type="text"
+        [(ngModel)]="newTodoTitle"
+        (keyup.enter)="addTodo()"
+        placeholder="What needs to be done?"
+        class="todo-input"
+      />
+      <select [(ngModel)]="newTodoPriority" class="priority-select">
+        <option value="low">🟢 Low</option>
+        <option value="medium">🟡 Medium</option>
+        <option value="high">🔴 High</option>
+      </select>
+      <input type="date" [(ngModel)]="newTodoDueDate" class="date-input" />
+      <button (click)="addTodo()" class="btn btn-primary" [disabled]="!newTodoTitle.trim()">
+        Add
+      </button>
+    </div>
+    
+    <!-- Search & Sort Bar -->
+    <div class="search-sort-bar">
+      <input
+        type="text"
+        [ngModel]="todoService.searchQuery()"
+        (ngModelChange)="todoService.setSearchQuery($event)"
+        placeholder="🔍 Search tasks..."
+        class="search-input"
+      />
+      <div class="sort-buttons">
+        <span>Sort by:</span>
+        <button (click)="setSort('created')" class="sort-btn" [class.active]="isSortActive('created')">
+          📅 Newest
+        </button>
+        <button (click)="setSort('priority')" class="sort-btn" [class.active]="isSortActive('priority')">
+          ⚡ Priority
+        </button>
+        <button (click)="setSort('dueDate')" class="sort-btn" [class.active]="isSortActive('dueDate')">
+          📆 Due Date
+        </button>
+      </div>
+    </div>
+    
+    <!-- Filter Buttons -->
+    <div class="filter-section">
+      <button (click)="setFilter('all')" class="filter-btn" [class.active]="isFilterActive('all')">
+        All ({{ stats().total }})
+      </button>
+      <button (click)="setFilter('active')" class="filter-btn" [class.active]="isFilterActive('active')">
+        Active ({{ stats().active }})
+      </button>
+      <button (click)="setFilter('completed')" class="filter-btn" [class.active]="isFilterActive('completed')">
+        Completed ({{ stats().completed }})
+      </button>
+    </div>
+    
+    <!-- Stats Summary -->
+    @if (stats().highPriority > 0) {
+      <div class="stats-badge">
+        ⚠️ {{ stats().highPriority }} high priority task(s) pending
+      </div>
+    }
+    
+    <!-- Todo List -->
+    <div class="todo-list">
+      @for (todo of todoService.processedTodos(); track todo.id) {
+        <div class="todo-item" [class.completed]="todo.completed" [class]="getPriorityClass(todo.priority)">
+          <input
+            type="checkbox"
+            [checked]="todo.completed"
+            (change)="toggleTodo(todo.id)"
+            class="todo-checkbox"
+          />
+          
+          @if (editingTodoId === todo.id) {
+            <div class="edit-mode">
+              <input
+                [(ngModel)]="editingTitle"
+                (keyup.enter)="saveEdit(todo.id)"
+                (blur)="saveEdit(todo.id)"
+                class="edit-input"
+                autofocus
+              />
+            </div>
+          } @else {
+            <span class="todo-title" (dblclick)="startEdit(todo)">
+              {{ todo.title }}
+            </span>
+          }
+          
+          <!-- Priority Dropdown -->
+          <select
+            [value]="todo.priority"
+            (change)="updatePriority(todo.id, $any($event.target).value)"
+            class="priority-badge"
+            [class]="getPriorityClass(todo.priority)"
+          >
+            <option value="low">🟢 Low</option>
+            <option value="medium">🟡 Medium</option>
+            <option value="high">🔴 High</option>
+          </select>
+          
+          <!-- Due Date Picker -->
+          <input
+            type="date"
+            [value]="todo.dueDate || ''"
+            (change)="updateDueDate(todo.id, $any($event.target).value)"
+            class="due-date-picker"
+            [class.overdue]="!todo.completed && isDueDatePast(todo.dueDate)"
+          />
+          
+          <button (click)="deleteTodo(todo.id)" class="delete-btn" aria-label="Delete">
+            ✗
+          </button>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <p>✨ No tasks match your criteria.</p>
+        </div>
+      }
+    </div>
+    
+    <!-- Footer Stats & Actions -->
+    @if (todoService.todos().length > 0) {
+      <div class="todo-footer">
+        <span class="items-left">{{ remainingCount() }} item(s) left</span>
+        @if (todoService.deletedTodo()) {
+          <button (click)="undoDelete()" class="undo-btn">
+            ↩️ Undo delete
+          </button>
+        }
+        @if (stats().completed > 0) {
+          <button (click)="clearCompleted()" class="clear-completed-btn">
+            Clear completed
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>
